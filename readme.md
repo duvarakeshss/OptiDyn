@@ -10,7 +10,6 @@ This project solves the Traveling Salesman Problem with precedence constraints u
 - [Usage](#usage)
 - [Explanation of Code](#explanation-of-code)
 - [Example Output](#example-output)
-- [References](#references)
 
 ## Introduction
 
