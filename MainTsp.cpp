@@ -7,12 +7,8 @@
 using namespace std;
 
 // Constant for maximum possible cost
-const long long INF = numeric_limits<long long>::max(); 
+const long long INF = numeric_limits<long long>::max();
 
-/**
- * @class TSPSolver
- * @brief Solves the Traveling Salesman Problem with precedence constraints using Dynamic Programming and Bounding.
- */
 class TSPSolver {
 private:
     int N; // Number of cities
@@ -21,12 +17,6 @@ private:
     vector<vector<long long>> dp; // DP table for memoization
     vector<vector<int>> path; // Path table to reconstruct the tour
     
-    /**
-     * @brief Check if the precedence constraints are satisfied for the next city.
-     * @param currentSet A bitmask representing the set of visited cities.
-     * @param nextCity The city we want to visit next.
-     * @return True if constraints are satisfied, otherwise false.
-     */
     bool checkPrecedence(int currentSet, int nextCity) {
         for (int i = 0; i < N; ++i) {
             if ((currentSet & (1 << i)) && precedenceConstraints[nextCity][i]) {
@@ -36,12 +26,6 @@ private:
         return true;
     }
 
-    /**
-     * @brief Lower Bound Heuristic to prune suboptimal paths.
-     * @param currentSet A bitmask representing the set of visited cities.
-     * @param currentCity The current city being evaluated.
-     * @return The calculated lower bound for the remaining cities.
-     */
     long long lowerBound(int currentSet, int currentCity) {
         long long lb = 0;
         for (int i = 0; i < N; ++i) {
@@ -58,13 +42,6 @@ private:
         return lb;
     }
 
-    /**
-     * @brief Dynamic Programming with bounding to solve the TSP.
-     * @param currentSet A bitmask representing the set of visited cities.
-     * @param currentCity The current city.
-     * @param upperBound The current upper bound for the solution cost.
-     * @return The minimum cost to complete the tour starting from the current city.
-     */
     long long tsp(int currentSet, int currentCity, long long upperBound) {
         if (currentSet == (1 << N) - 1) {
             return travelCost[currentCity][0]; // Return to start city
@@ -76,13 +53,11 @@ private:
 
         long long result = INF;
 
-        // Only prune if the lower bound guarantees the path is worse
         long long lb = lowerBound(currentSet, currentCity);
         if (lb + travelCost[currentCity][0] >= upperBound) {
             return result; // Prune this branch
         }
 
-        // Explore all next cities in parallel
         #pragma omp parallel for schedule(dynamic) reduction(min: result)
         for (int nextCity = 0; nextCity < N; ++nextCity) {
             if (!(currentSet & (1 << nextCity)) && checkPrecedence(currentSet, nextCity)) {
@@ -109,10 +84,6 @@ private:
         return result;
     }
 
-    /**
-     * @brief Generate an upper bound using a greedy heuristic.
-     * @return The greedy upper bound cost.
-     */
     long long greedyUpperBound() {
         long long cost = 0;
         int currentCity = 0;
@@ -139,12 +110,6 @@ private:
     }
 
 public:
-    /**
-     * @brief Constructor to initialize the TSP solver with the number of cities and cost/precedence matrices.
-     * @param N Number of cities.
-     * @param travelCost The cost matrix for traveling between cities.
-     * @param precedenceConstraints Matrix that defines precedence constraints between cities.
-     */
     TSPSolver(int N, const vector<vector<long long>>& travelCost,
               const vector<vector<int>>& precedenceConstraints)
         : N(N), travelCost(travelCost), precedenceConstraints(precedenceConstraints) {
@@ -152,10 +117,6 @@ public:
         path.assign(1 << N, vector<int>(N, -1)); // Initialize path tracking table
     }
 
-    /**
-     * @brief Solve the TSP problem with precedence constraints and return the minimum cost.
-     * @return The minimum cost of the tour.
-     */
     long long solve() {
         long long upperBound = greedyUpperBound(); // Initial upper bound
         long long minCost = tsp(1, 0, upperBound); // Start from city 0
@@ -170,9 +131,6 @@ public:
         return minCost;
     }
 
-    /**
-     * @brief Print the tour path.
-     */
     void printPath() {
         int currentSet = 1;
         int currentCity = 0;
@@ -190,29 +148,29 @@ public:
     }
 };
 
-// Example usage
 int main() {
-    // Cost matrix for 4 cities
-    vector<vector<long long>> travelCost = {
-        {INF, 10, 15, 20},
-        {10, INF, 35, 25},
-        {15, 35, INF, 30},
-        {20, 25, 30, INF}
-    };
+    int N;
+    cout << "Enter the number of cities: ";
+    cin >> N;
 
-    // Precedence constraints matrix (1 if city i must be visited before city j)
-    vector<vector<int>> precedenceConstraints = {
-        {0, 1, 0, 0},  // City 0 must be visited before City 1
-        {0, 0, 0, 0},
-        {0, 0, 0, 1},  // City 2 must be visited before City 3
-        {0, 0, 0, 0}
-    };
+    vector<vector<long long>> travelCost(N, vector<long long>(N));
+    cout << "Enter the travel cost matrix (use " << INF << " for no direct path):" << endl;
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            cin >> travelCost[i][j];
+        }
+    }
 
-    // Create the TSP solver
-    TSPSolver solver(4, travelCost, precedenceConstraints);
+    vector<vector<int>> precedenceConstraints(N, vector<int>(N));
+    cout << "Enter the precedence constraints matrix (1 if city i must be visited before city j, else 0):" << endl;
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            cin >> precedenceConstraints[i][j];
+        }
+    }
 
-    // Solve the TSP problem and print the result
+    TSPSolver solver(N, travelCost, precedenceConstraints);
     solver.solve();
 
-    return 0;  
+    return 0;
 }
